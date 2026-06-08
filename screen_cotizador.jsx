@@ -50,7 +50,7 @@ function CotizadorScreen() {
           {/* STEP 0 — choose ramo */}
           {step === 0 && (
             <div>
-              <SH_q title="¿Qué querés cotizar?" sub="Elegí el ramo para empezar" />
+              <SH_q title="¿Qué querés cotizar?" sub="Elegí el ramo para empezar la carga manual" />
               <div className="grid-3" style={{ gap: 14 }}>
                 {window.COTIZA_RAMOS.map(r => (
                   <button key={r.key} onClick={() => { setRamo(r.key); setStep(1); }} className="card card-pad"
@@ -63,6 +63,62 @@ function CotizadorScreen() {
                     </div>
                   </button>
                 ))}
+              </div>
+
+              {/* Cotización automática por WhatsApp */}
+              <div style={{ marginTop: 30 }}>
+                <SH_q title="Cotización automática por WhatsApp" sub="El cliente manda los datos por WhatsApp y el sistema pre-cotiza solo, con tus credenciales"
+                  action={<span className="badge badge-clay">Beta</span>} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 20 }}>
+                  {/* flujo */}
+                  <div className="card card-pad">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {[
+                        { ic: 'key-round', t: '1 · Cargás credenciales', d: 'Conectás tus accesos de cada aseguradora (ej: Sancor Seguros) una sola vez en el CRM.' },
+                        { ic: 'camera', t: '2 · El cliente envía foto + cédula', d: 'Por WhatsApp manda la foto del auto y la cédula verde; el bot extrae los datos.' },
+                        { ic: 'zap', t: '3 · Pre-cotización automática', d: 'El sistema cotiza con tus credenciales y devuelve el comparativo al instante.' },
+                      ].map((s, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                          <span className="ic-chip" style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--emerald-100)', color: 'var(--emerald-deep)' }}><I_q name={s.ic} size={18} /></span>
+                          <div>
+                            <div style={{ fontSize: 13.5, fontWeight: 600 }}>{s.t}</div>
+                            <div style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.45 }}>{s.d}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* credenciales */}
+                  <div className="card">
+                    <div className="card-head"><I_q name="shield-check" size={18} style={{ color: 'var(--emerald)' }} /><h3>Credenciales de aseguradoras</h3></div>
+                    <div style={{ padding: '6px 0' }}>
+                      {window.ASEGURADORA_CREDS.map((cr, i) => {
+                        const map = { 'conectada': ['success', 'Conectada'], 'scraping': ['warning', 'Vía scraping'], 'sin-credenciales': ['neutral', 'Sin credenciales'] };
+                        const [kind, label] = map[cr.estado];
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '10px 18px', borderBottom: i < window.ASEGURADORA_CREDS.length - 1 ? '1px solid var(--line)' : 'none' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600 }}>{cr.aseg}</div>
+                              <div style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>{cr.metodo}{cr.ramos.length ? ` · ${cr.ramos.length} ramos` : ''}</div>
+                            </div>
+                            {cr.estado === 'sin-credenciales'
+                              ? <button className="btn btn-ghost btn-sm"><I_q name="plus" />Conectar</button>
+                              : <span className={`badge badge-${kind}`}><span className="dot" />{label}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                {/* nota de limitaciones */}
+                <div className="card card-pad" style={{ marginTop: 16, background: 'var(--warning-100)', border: '1px solid #EAD9AE' }}>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    <I_q name="info" size={18} style={{ color: 'var(--warning)', marginTop: 1, flex: 'none' }} />
+                    <div style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.5 }}>
+                      <b style={{ color: 'var(--ink)' }}>Limitaciones técnicas.</b> La mayoría de las aseguradoras no exponen una API pública: la cotización automática requiere acuerdos comerciales y acceso al portal de productores. Como alternativa se puede hacer <b>scraping</b> de los cotizadores públicos (ej: San Cristóbal), más frágil y de desarrollo más complejo que la carga manual actual.
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

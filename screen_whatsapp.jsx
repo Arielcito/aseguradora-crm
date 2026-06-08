@@ -63,6 +63,28 @@ function WhatsappScreen() {
       <div className="scroll-area" style={{ padding: 0, display: 'flex', overflow: 'hidden' }}>
         {/* chat list */}
         <div style={{ width: 340, borderRight: '1px solid var(--line)', background: 'var(--surface)', overflowY: 'auto', flex: 'none' }}>
+          {/* Líneas de WhatsApp enlazadas */}
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', background: 'var(--surface-2)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 9 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>Líneas enlazadas</span>
+              <button className="link-btn" style={{ marginLeft: 'auto', fontSize: 12, display: 'inline-flex', gap: 4, alignItems: 'center' }}><I_w name="plus" size={13} />Enlazar</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {window.WA_LINES.map(l => {
+                const ok = l.estado === 'conectada';
+                return (
+                  <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 9 }} title={`${l.tipo} · ${l.uso}`}>
+                    <span className="ic-chip" style={{ width: 28, height: 28, background: ok ? 'var(--emerald-100)' : 'var(--warning-100)', color: ok ? 'var(--emerald-deep)' : 'var(--warning)' }}><I_w name="smartphone" size={14} /></span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.label}</div>
+                      <div className="tnum" style={{ fontSize: 11, color: 'var(--ink-3)' }}>{l.phone}</div>
+                    </div>
+                    <span className={`badge badge-${ok ? 'success' : 'warning'}`} style={{ fontSize: 10.5 }}><span className="dot" />{ok ? 'Conectada' : 'Pendiente'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
           <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <span className="badge badge-success"><span className="dot" />Bot en línea</span>
             <span style={{ fontSize: 12, color: 'var(--ink-3)', marginLeft: 'auto' }}>5 conversaciones</span>

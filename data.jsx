@@ -30,17 +30,33 @@ const RAMOS = {
 
 const ASEGURADORAS = ['Sancor Seguros', 'La Caja', 'Federación Patronal', 'San Cristóbal', 'Zurich', 'Mercantil Andina', 'Allianz', 'Provincia Seguros'];
 
+// ---- Pipeline comercial ----
+// Estados de oportunidad (antes solo se clasificaba al cliente; ahora cada
+// oportunidad lleva su propia etapa con criterio explícito de por qué lo es).
+const PIPELINE = [
+  { key: 'no-contactado',     label: 'No contactado',     kind: 'neutral' },
+  { key: 'contactado',        label: 'Contactado',        kind: 'info' },
+  { key: 'propuesta-enviada', label: 'Propuesta enviada', kind: 'clay' },
+  { key: 'negociacion',       label: 'Negociación',       kind: 'warning' },
+  { key: 'ganada',            label: 'Ganada',            kind: 'success' },
+];
+function pipelineStage(key) {
+  return PIPELINE.find(s => s.key === key) || { key, label: key, kind: 'neutral' };
+}
+
 // ---- Clientes ----
+// policies.debito = tiene débito automático. Si es false, el vencimiento se
+// cobra manualmente y se avisa al cliente por WhatsApp.
 const CLIENTS = [
   {
     id: 'c1', name: 'Martín Quiroga', type: 'Persona física', dni: '28.345.112',
     email: 'martin.quiroga@gmail.com', phone: '+54 9 351 244-8190', city: 'Córdoba',
     status: 'activo', since: '2019', score: 92, ltv: 1840000,
     policies: [
-      { ramo: 'auto', aseg: 'Sancor Seguros', nro: 'AUT-44120', prima: 48200, venc: '2026-06-21', estado: 'vigente' },
-      { ramo: 'hogar', aseg: 'Sancor Seguros', nro: 'HOG-10883', prima: 21500, venc: '2026-09-02', estado: 'vigente' },
+      { ramo: 'auto', aseg: 'Sancor Seguros', nro: 'AUT-44120', prima: 48200, venc: '2026-06-21', estado: 'vigente', debito: true },
+      { ramo: 'hogar', aseg: 'Sancor Seguros', nro: 'HOG-10883', prima: 21500, venc: '2026-09-02', estado: 'vigente', debito: true },
     ],
-    opps: [{ ramo: 'vida', etapa: 'Propuesta enviada', valor: 36000 }],
+    opps: [{ ramo: 'vida', etapa: 'propuesta-enviada', valor: 36000, motivo: 'Multiproducto al día sin cobertura de vida (cross-sell)' }],
     tags: ['Multi-producto', 'Pago al día'],
   },
   {
@@ -48,9 +64,9 @@ const CLIENTS = [
     email: 'lu.fernandez@outlook.com', phone: '+54 9 11 5567-2204', city: 'CABA',
     status: 'activo', since: '2021', score: 78, ltv: 690000,
     policies: [
-      { ramo: 'auto', aseg: 'La Caja', nro: 'AUT-77321', prima: 61300, venc: '2026-06-14', estado: 'por-vencer' },
+      { ramo: 'auto', aseg: 'La Caja', nro: 'AUT-77321', prima: 61300, venc: '2026-06-14', estado: 'por-vencer', debito: false },
     ],
-    opps: [{ ramo: 'hogar', etapa: 'Cotización pedida', valor: 19800 }],
+    opps: [{ ramo: 'hogar', etapa: 'contactado', valor: 19800, motivo: 'Pidió cotización de hogar por WhatsApp' }],
     tags: ['Renovación próxima'],
   },
   {
@@ -58,11 +74,11 @@ const CLIENTS = [
     email: 'admin@delsur.com.ar', phone: '+54 9 341 410-7765', city: 'Rosario',
     status: 'activo', since: '2018', score: 88, ltv: 4250000,
     policies: [
-      { ramo: 'art', aseg: 'Federación Patronal', nro: 'ART-22019', prima: 312000, venc: '2026-07-31', estado: 'vigente' },
-      { ramo: 'comercio', aseg: 'Federación Patronal', nro: 'INT-55012', prima: 184000, venc: '2026-06-18', estado: 'por-vencer' },
-      { ramo: 'caucion', aseg: 'San Cristóbal', nro: 'CAU-09921', prima: 95000, venc: '2026-11-10', estado: 'vigente' },
+      { ramo: 'art', aseg: 'Federación Patronal', nro: 'ART-22019', prima: 312000, venc: '2026-07-31', estado: 'vigente', debito: true },
+      { ramo: 'comercio', aseg: 'Federación Patronal', nro: 'INT-55012', prima: 184000, venc: '2026-06-18', estado: 'por-vencer', debito: true },
+      { ramo: 'caucion', aseg: 'San Cristóbal', nro: 'CAU-09921', prima: 95000, venc: '2026-11-10', estado: 'vigente', debito: true },
     ],
-    opps: [{ ramo: 'caucion', etapa: 'Negociación', valor: 142000 }],
+    opps: [{ ramo: 'caucion', etapa: 'negociacion', valor: 142000, motivo: 'Renovación de caución en negociación' }],
     tags: ['Cuenta clave', 'Multi-producto'],
   },
   {
@@ -70,7 +86,7 @@ const CLIENTS = [
     email: 'sofiamedina@gmail.com', phone: '+54 9 261 533-1188', city: 'Mendoza',
     status: 'moroso', since: '2022', score: 54, ltv: 240000,
     policies: [
-      { ramo: 'auto', aseg: 'Mercantil Andina', nro: 'AUT-30156', prima: 52900, venc: '2026-08-09', estado: 'falta-pago' },
+      { ramo: 'auto', aseg: 'Mercantil Andina', nro: 'AUT-30156', prima: 52900, venc: '2026-08-09', estado: 'falta-pago', debito: false },
     ],
     opps: [],
     tags: ['Cuota vencida'],
@@ -80,11 +96,11 @@ const CLIENTS = [
     email: 'tomas.ibanez@yahoo.com.ar', phone: '+54 9 11 6041-9923', city: 'CABA',
     status: 'activo', since: '2017', score: 95, ltv: 2980000,
     policies: [
-      { ramo: 'vida', aseg: 'Zurich', nro: 'VID-88210', prima: 74000, venc: '2026-12-01', estado: 'vigente' },
-      { ramo: 'retiro', aseg: 'Zurich', nro: 'RET-12044', prima: 120000, venc: '2027-01-15', estado: 'vigente' },
-      { ramo: 'auto', aseg: 'Allianz', nro: 'AUT-91002', prima: 88500, venc: '2026-06-26', estado: 'por-vencer' },
+      { ramo: 'vida', aseg: 'Zurich', nro: 'VID-88210', prima: 74000, venc: '2026-12-01', estado: 'vigente', debito: true },
+      { ramo: 'retiro', aseg: 'Zurich', nro: 'RET-12044', prima: 120000, venc: '2027-01-15', estado: 'vigente', debito: true },
+      { ramo: 'auto', aseg: 'Allianz', nro: 'AUT-91002', prima: 88500, venc: '2026-06-26', estado: 'por-vencer', debito: true },
     ],
-    opps: [{ ramo: 'hogar', etapa: 'Propuesta enviada', valor: 41000 }],
+    opps: [{ ramo: 'hogar', etapa: 'propuesta-enviada', valor: 41000, motivo: 'Tiene auto y vida; sin cobertura de hogar (cross-sell)' }],
     tags: ['Cuenta clave', 'Multi-producto', 'Referidor'],
   },
   {
@@ -92,7 +108,7 @@ const CLIENTS = [
     email: 'valen.rios@gmail.com', phone: '+54 9 381 277-6650', city: 'Tucumán',
     status: 'inactivo', since: '2020', score: 41, ltv: 180000,
     policies: [],
-    opps: [{ ramo: 'auto', etapa: 'Re-contacto', valor: 55000 }],
+    opps: [{ ramo: 'auto', etapa: 'no-contactado', valor: 55000, motivo: 'Cliente inactivo 8 meses sin pólizas — recuperar' }],
     tags: ['Sin pólizas activas', 'Inactivo 8 meses'],
   },
   {
@@ -100,10 +116,10 @@ const CLIENTS = [
     email: 'seguros@laverde.agro', phone: '+54 9 3492 41-2200', city: 'Rafaela',
     status: 'activo', since: '2016', score: 90, ltv: 6100000,
     policies: [
-      { ramo: 'art', aseg: 'Sancor Seguros', nro: 'ART-11003', prima: 540000, venc: '2026-10-01', estado: 'vigente' },
-      { ramo: 'comercio', aseg: 'Sancor Seguros', nro: 'INT-77810', prima: 220000, venc: '2026-06-30', estado: 'por-vencer' },
+      { ramo: 'art', aseg: 'Sancor Seguros', nro: 'ART-11003', prima: 540000, venc: '2026-10-01', estado: 'vigente', debito: true },
+      { ramo: 'comercio', aseg: 'Sancor Seguros', nro: 'INT-77810', prima: 220000, venc: '2026-06-30', estado: 'por-vencer', debito: false },
     ],
-    opps: [{ ramo: 'caucion', etapa: 'Cotización pedida', valor: 310000 }],
+    opps: [{ ramo: 'caucion', etapa: 'contactado', valor: 310000, motivo: 'Solicitó cotización de caución' }],
     tags: ['Cuenta clave'],
   },
   {
@@ -111,7 +127,7 @@ const CLIENTS = [
     email: 'diegososa88@gmail.com', phone: '+54 9 299 612-3341', city: 'Neuquén',
     status: 'activo', since: '2023', score: 70, ltv: 320000,
     policies: [
-      { ramo: 'auto', aseg: 'San Cristóbal', nro: 'AUT-66721', prima: 57400, venc: '2026-06-12', estado: 'por-vencer' },
+      { ramo: 'auto', aseg: 'San Cristóbal', nro: 'AUT-66721', prima: 57400, venc: '2026-06-12', estado: 'por-vencer', debito: false },
     ],
     opps: [],
     tags: ['Cumple este mes'],
@@ -129,15 +145,60 @@ function policiesExpiring() {
     .sort((a, b) => a.venc.localeCompare(b.venc));
 }
 
+// oportunidades (derivado, con datos del cliente)
+function opportunities() {
+  const rows = [];
+  CLIENTS.forEach(c => c.opps.forEach(o => {
+    rows.push({ ...o, client: c.name, clientId: c.id, clientStatus: c.status });
+  }));
+  return rows;
+}
+
 // ---- Automatizaciones ----
+// avisos: a quién se notifica. tiempos: cadencia de disparo.
+// mensaje: plantilla editable con variables de reemplazo (ver MSG_VARS).
 const AUTOMATIONS = [
-  { id: 'a1', name: 'Vencimiento de póliza', desc: 'Aviso al cliente y al productor 30 / 15 / 5 días antes del vencimiento.', icon: 'calendar-clock', color: 'warning', active: true, trigger: '30 días antes', channel: 'WhatsApp + Email', enColas: 14, ejecutadas: 312 },
-  { id: 'a2', name: 'Renovación automática', desc: 'Genera propuesta de renovación y la envía para confirmación con un toque.', icon: 'refresh-cw', color: 'emerald', active: true, trigger: '10 días antes', channel: 'WhatsApp', enColas: 9, ejecutadas: 188 },
-  { id: 'a3', name: 'Saludo de cumpleaños', desc: 'Mensaje personalizado el día del cumpleaños del cliente.', icon: 'cake', color: 'clay', active: true, trigger: 'Día del cumpleaños', channel: 'WhatsApp', enColas: 3, ejecutadas: 96 },
-  { id: 'a4', name: 'Falta de pago', desc: 'Recordatorio escalonado ante cuota impaga, con link de pago.', icon: 'circle-alert', color: 'danger', active: true, trigger: 'Cuota vencida +2 días', channel: 'WhatsApp + SMS', enColas: 5, ejecutadas: 73 },
-  { id: 'a5', name: 'Nuevos productos', desc: 'Detecta perfil y propone cross-sell relevante (ej: tenés auto → hogar).', icon: 'sparkles', color: 'info', active: false, trigger: 'Mensual / por perfil', channel: 'Email', enColas: 0, ejecutadas: 41 },
-  { id: 'a6', name: 'Clientes inactivos', desc: 'Re-contacto automático a clientes sin movimientos hace +6 meses.', icon: 'user-round-x', color: 'info', active: true, trigger: 'Sin actividad 6 meses', channel: 'WhatsApp', enColas: 7, ejecutadas: 54 },
-  { id: 'a7', name: 'Recordatorio de documentación', desc: 'Solicita papeles faltantes para emitir o renovar (DNI, cédula, etc.).', icon: 'file-text', color: 'warning', active: true, trigger: 'Doc. pendiente', channel: 'WhatsApp', enColas: 11, ejecutadas: 129 },
+  { id: 'a1', name: 'Vencimiento de póliza', desc: 'Avisos escalonados al cliente y al productor antes del vencimiento.', icon: 'calendar-clock', color: 'warning', active: true, trigger: '30 / 15 / 5 días antes', tiempos: [30, 15, 5], avisos: ['cliente', 'productor'], channel: 'WhatsApp + Email', enColas: 14, ejecutadas: 312,
+    mensaje: 'Hola {nombre} 👋 Tu póliza de {ramo} ({n_poliza}) en {aseguradora} vence el {vencimiento}. La prima a cobrar es {prima}. ¿Coordinamos el cobro? — {productor}' },
+  { id: 'a2', name: 'Gestión de renovación', desc: 'Prepara la renovación para cobro manual (no cobra solo): la deja lista para confirmar.', icon: 'refresh-cw', color: 'emerald', active: true, trigger: '10 días antes', tiempos: [10], avisos: ['cliente'], channel: 'WhatsApp', enColas: 9, ejecutadas: 188,
+    mensaje: 'Hola {nombre}, preparé la renovación de tu {ramo} ({n_poliza}). Queda lista para cobro: {prima}. Confirmá y la emitimos. — {productor}' },
+  { id: 'a3', name: 'Saludo de cumpleaños', desc: 'Mensaje personalizado el día del cumpleaños del cliente.', icon: 'cake', color: 'clay', active: true, trigger: 'Día del cumpleaños', tiempos: [], avisos: ['cliente'], channel: 'WhatsApp', enColas: 3, ejecutadas: 96,
+    mensaje: '¡Feliz cumpleaños, {nombre}! 🎉 Que tengas un gran día. Gracias por confiar en nosotros. — {productor}' },
+  { id: 'a4', name: 'Falta de pago', desc: 'Recordatorio escalonado ante cuota impaga, con link de pago.', icon: 'circle-alert', color: 'danger', active: true, trigger: 'Cuota vencida +2 días', tiempos: [2], avisos: ['cliente', 'productor'], channel: 'WhatsApp + SMS', enColas: 5, ejecutadas: 73,
+    mensaje: 'Hola {nombre}, registramos impaga la cuota de {ramo} ({n_poliza}). Evitá la baja de cobertura abonando acá 👉 [link de pago]. — {productor}' },
+  { id: 'a5', name: 'Nuevos productos', desc: 'Detecta perfil y propone cross-sell relevante (ej: tenés auto → hogar).', icon: 'sparkles', color: 'info', active: false, trigger: 'Mensual / por perfil', tiempos: [], avisos: ['cliente'], channel: 'Email', enColas: 0, ejecutadas: 41,
+    mensaje: 'Hola {nombre}, vimos que tenés {ramo}. ¿Querés que te cotice una cobertura complementaria sin compromiso? — {productor}' },
+  { id: 'a6', name: 'Clientes inactivos', desc: 'Re-contacto automático a clientes sin movimientos hace +6 meses.', icon: 'user-round-x', color: 'info', active: true, trigger: 'Sin actividad 6 meses', tiempos: [], avisos: ['cliente'], channel: 'WhatsApp', enColas: 7, ejecutadas: 54,
+    mensaje: 'Hola {nombre}, hace un tiempo que no hablamos. ¿Revisamos juntos tus coberturas? Quedo a disposición. — {productor}' },
+  { id: 'a7', name: 'Recordatorio de documentación', desc: 'Solicita papeles faltantes para emitir o renovar (DNI, cédula, etc.).', icon: 'file-text', color: 'warning', active: true, trigger: 'Doc. pendiente', tiempos: [], avisos: ['cliente'], channel: 'WhatsApp', enColas: 11, ejecutadas: 129,
+    mensaje: 'Hola {nombre}, para avanzar con tu {ramo} nos falta documentación. ¿Nos la enviás por acá? — {productor}' },
+];
+
+// variables de reemplazo disponibles para las plantillas de mensaje
+const MSG_VARS = [
+  { token: '{nombre}',      desc: 'Nombre del cliente' },
+  { token: '{ramo}',        desc: 'Tipo de seguro' },
+  { token: '{n_poliza}',    desc: 'N° de póliza' },
+  { token: '{aseguradora}', desc: 'Compañía' },
+  { token: '{vencimiento}', desc: 'Fecha de vencimiento' },
+  { token: '{prima}',       desc: 'Prima / monto a cobrar' },
+  { token: '{productor}',   desc: 'Nombre del productor' },
+];
+
+// ---- Líneas de WhatsApp enlazadas ----
+const WA_LINES = [
+  { id: 'l1', label: 'Línea comercial',   phone: '+54 9 11 5567-0100', estado: 'conectada', tipo: 'WhatsApp Business API', uso: 'Cotizaciones y ventas' },
+  { id: 'l2', label: 'Línea de siniestros', phone: '+54 9 11 5567-0101', estado: 'conectada', tipo: 'WhatsApp Business API', uso: 'Urgencias y siniestros' },
+  { id: 'l3', label: 'Línea de cobranzas', phone: '+54 9 11 5567-0102', estado: 'pendiente', tipo: 'Verificación en curso', uso: 'Avisos de pago' },
+];
+
+// ---- Credenciales de aseguradoras (para cotización automática) ----
+// estado: conectada (API/portal autorizado) | scraping (cotizador público) | sin-credenciales
+const ASEGURADORA_CREDS = [
+  { aseg: 'Sancor Seguros',      estado: 'conectada',      metodo: 'Portal productores', ramos: ['auto', 'hogar', 'art'] },
+  { aseg: 'La Caja',             estado: 'conectada',      metodo: 'Portal productores', ramos: ['auto', 'hogar'] },
+  { aseg: 'San Cristóbal',       estado: 'scraping',       metodo: 'Cotizador público',  ramos: ['auto'] },
+  { aseg: 'Federación Patronal', estado: 'sin-credenciales', metodo: '—',               ramos: [] },
 ];
 
 // ---- Cotizador: ramos ----
@@ -202,6 +263,7 @@ function fmtDate(dateStr) {
 
 Object.assign(window, {
   RAMOS, ASEGURADORAS, CLIENTS, AUTOMATIONS, COTIZA_RAMOS, COTIZACIONES,
-  WA_CHATS, CAMPAIGNS, policiesExpiring,
+  WA_CHATS, CAMPAIGNS, policiesExpiring, opportunities,
+  PIPELINE, pipelineStage, MSG_VARS, WA_LINES, ASEGURADORA_CREDS,
   initials, avColor, money, moneyShort, daysTo, fmtDate,
 });

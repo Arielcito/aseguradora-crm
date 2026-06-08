@@ -16,8 +16,42 @@ function Toggle({ on, onChange }) {
   );
 }
 
+// editor de plantilla con paleta de variables de reemplazo (inserta en el cursor)
+function MsgEditor({ value, onChange }) {
+  const ref = useRef(null);
+  const insert = (token) => {
+    const ta = ref.current;
+    if (!ta) { onChange((value + ' ' + token).trim()); return; }
+    const s = ta.selectionStart, e = ta.selectionEnd;
+    onChange(value.slice(0, s) + token + value.slice(e));
+    requestAnimationFrame(() => { ta.focus(); const pos = s + token.length; ta.setSelectionRange(pos, pos); });
+  };
+  return (
+    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line)' }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Plantilla del mensaje</div>
+      <textarea ref={ref} value={value} onChange={(e) => onChange(e.target.value)}
+        style={{ width: '100%', minHeight: 86, border: '1px solid var(--line-2)', borderRadius: 'var(--r-sm)', padding: '10px 12px', fontSize: 13.5, fontFamily: 'var(--font-ui)', color: 'var(--ink)', background: 'var(--surface)', outline: 'none', resize: 'vertical', lineHeight: 1.5 }} />
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, alignItems: 'center' }}>
+        <span style={{ fontSize: 12, color: 'var(--ink-3)', marginRight: 2 }}>Insertar variable:</span>
+        {window.MSG_VARS.map(v => (
+          <button key={v.token} type="button" onClick={() => insert(v.token)} title={v.desc}
+            style={{ fontFamily: 'var(--font-display)', fontSize: 11.5, fontWeight: 600, color: 'var(--emerald-deep)', background: 'var(--emerald-100)', border: '1px solid var(--emerald-200)', borderRadius: 'var(--r-pill)', padding: '3px 10px' }}>
+            {v.token}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+        <button className="btn btn-primary btn-sm"><I_a name="check" />Guardar plantilla</button>
+        <button className="btn btn-ghost btn-sm"><I_a name="eye" />Vista previa</button>
+      </div>
+    </div>
+  );
+}
+
 function AutomationsScreen() {
   const [autos, setAutos] = useState(window.AUTOMATIONS);
+  const [editing, setEditing] = useState(null);
+  const [drafts, setDrafts] = useState(() => { const o = {}; window.AUTOMATIONS.forEach(a => { o[a.id] = a.mensaje; }); return o; });
   const set = (id, v) => setAutos(a => a.map(x => x.id === id ? { ...x, active: v } : x));
   const activeN = autos.filter(a => a.active).length;
   const enCola = autos.reduce((s, a) => s + a.enColas, 0);
@@ -56,22 +90,37 @@ function AutomationsScreen() {
               <div className="stack" style={{ gap: 12 }}>
                 {autos.map(a => {
                   const [bg, fg] = COLOR[a.color];
+                  const open = editing === a.id;
                   return (
-                    <div key={a.id} className="card card-pad" style={{ display: 'flex', alignItems: 'center', gap: 16, opacity: a.active ? 1 : 0.72 }}>
-                      <span className="ic-chip" style={{ width: 42, height: 42, borderRadius: 11, background: bg, color: fg }}><I_a name={a.icon} size={20} /></span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                          <span style={{ fontWeight: 600, fontSize: 14.5, fontFamily: 'var(--font-display)' }}>{a.name}</span>
-                          {a.active ? <span className="badge badge-success"><span className="dot" />Activa</span> : <span className="badge badge-neutral">Pausada</span>}
+                    <div key={a.id} className="card card-pad" style={{ opacity: a.active ? 1 : 0.72 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
+                        <span className="ic-chip" style={{ width: 42, height: 42, borderRadius: 11, background: bg, color: fg }}><I_a name={a.icon} size={20} /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                            <span style={{ fontWeight: 600, fontSize: 14.5, fontFamily: 'var(--font-display)' }}>{a.name}</span>
+                            {a.active ? <span className="badge badge-success"><span className="dot" />Activa</span> : <span className="badge badge-neutral">Pausada</span>}
+                          </div>
+                          <p style={{ margin: '4px 0 8px', fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.4 }}>{a.desc}</p>
+                          <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--ink-3)', flexWrap: 'wrap' }}>
+                            <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="clock" size={13} />{a.trigger}</span>
+                            <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="radio" size={13} />{a.channel}</span>
+                            <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="bell" size={13} />Avisa a {a.avisos.join(' y ')}</span>
+                            {a.enColas > 0 && <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="users" size={13} />{a.enColas} en cola</span>}
+                          </div>
+                          {a.tiempos.length > 1 && (
+                            <div style={{ display: 'flex', gap: 6, marginTop: 9 }}>
+                              {a.tiempos.map(t => <span key={t} className="badge badge-neutral" style={{ fontSize: 11 }}>{t} días antes</span>)}
+                            </div>
+                          )}
                         </div>
-                        <p style={{ margin: '4px 0 8px', fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.4 }}>{a.desc}</p>
-                        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--ink-3)' }}>
-                          <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="clock" size={13} />{a.trigger}</span>
-                          <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="radio" size={13} />{a.channel}</span>
-                          {a.enColas > 0 && <span style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><I_a name="users" size={13} />{a.enColas} en cola</span>}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flex: 'none' }}>
+                          <Toggle on={a.active} onChange={(v) => set(a.id, v)} />
+                          <button className="link-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12.5 }} onClick={() => setEditing(open ? null : a.id)}>
+                            <I_a name={open ? 'x' : 'pencil'} size={14} />{open ? 'Cerrar' : 'Editar mensaje'}
+                          </button>
                         </div>
                       </div>
-                      <Toggle on={a.active} onChange={(v) => set(a.id, v)} />
+                      {open && <MsgEditor value={drafts[a.id]} onChange={(v) => setDrafts(d => ({ ...d, [a.id]: v }))} />}
                     </div>
                   );
                 })}

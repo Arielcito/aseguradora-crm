@@ -12,6 +12,7 @@ function ClientStatus({ status }) {
 /* ---------- LIST ---------- */
 function CrmListScreen({ onOpenClient }) {
   const [filter, setFilter] = useState('todos');
+  const [stage, setStage] = useState('todas');
   const filters = [
     { id: 'todos', label: 'Todos' },
     { id: 'activo', label: 'Activos' },
@@ -19,6 +20,7 @@ function CrmListScreen({ onOpenClient }) {
     { id: 'inactivo', label: 'Inactivos' },
   ];
   const list = window.CLIENTS.filter(c => filter === 'todos' || c.status === filter);
+  const opps = window.opportunities().filter(o => stage === 'todas' || o.etapa === stage);
 
   return (
     <>
@@ -82,6 +84,40 @@ function CrmListScreen({ onOpenClient }) {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* Pipeline comercial — oportunidades con estado y criterio explícito */}
+          <div style={{ marginTop: 28 }}>
+            <div className="sec-head">
+              <div>
+                <h2>Pipeline comercial</h2>
+                <div className="sec-sub">Oportunidades por etapa. Cada una muestra el criterio por el que se clasifica como oportunidad.</div>
+              </div>
+              <div className="seg">
+                {[['todas', 'Todas'], ...window.PIPELINE.map(s => [s.key, s.label])].map(([id, l]) => (
+                  <button key={id} className={stage === id ? 'active' : ''} onClick={() => setStage(id)}>{l}</button>
+                ))}
+              </div>
+            </div>
+            <div className="card">
+              <table className="table">
+                <thead><tr><th>Cliente</th><th>Ramo</th><th>Etapa</th><th>Criterio</th><th className="t-right">Valor estimado</th><th></th></tr></thead>
+                <tbody>
+                  {opps.length === 0
+                    ? <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: 28 }}>Sin oportunidades en esta etapa.</td></tr>
+                    : opps.map((o, i) => (
+                      <tr key={i} onClick={() => onOpenClient(o.clientId)}>
+                        <td><div className="cell-user"><Av_c name={o.client} size={28} /><div className="nm"><div className="t-strong">{o.client}</div></div></div></td>
+                        <td><RT_c ramo={o.ramo} /></td>
+                        <td><window.PipelineBadge etapa={o.etapa} /></td>
+                        <td style={{ fontSize: 12.5, maxWidth: 300 }}>{o.motivo}</td>
+                        <td className="t-right tnum t-strong">{window.money(o.valor)}</td>
+                        <td className="t-right"><I_c name="chevron-right" size={17} style={{ color: 'var(--ink-3)' }} /></td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -202,13 +238,14 @@ function CrmDetailScreen({ clientId, onBack }) {
             <div className="card">
               {c.opps.length === 0
                 ? <div style={{ padding: 40, textAlign: 'center', color: 'var(--ink-3)' }}>Sin oportunidades abiertas.</div>
-                : <table className="table"><thead><tr><th>Ramo</th><th>Etapa</th><th className="t-right">Valor estimado</th><th></th></tr></thead>
+                : <table className="table"><thead><tr><th>Ramo</th><th>Etapa</th><th>Criterio</th><th className="t-right">Valor estimado</th><th></th></tr></thead>
                   <tbody>{c.opps.map((o, i) => (
                     <tr key={i}>
                       <td><RT_c ramo={o.ramo} /></td>
-                      <td><span className="badge badge-clay">{o.etapa}</span></td>
+                      <td><window.PipelineBadge etapa={o.etapa} /></td>
+                      <td style={{ fontSize: 12.5, maxWidth: 280 }}>{o.motivo}</td>
                       <td className="t-right tnum t-strong">{window.money(o.valor)}</td>
-                      <td className="t-right"><button className="btn btn-ghost btn-sm">Avanzar</button></td>
+                      <td className="t-right"><button className="btn btn-ghost btn-sm">Avanzar etapa</button></td>
                     </tr>
                   ))}</tbody></table>}
             </div>
@@ -223,7 +260,7 @@ function CrmDetailScreen({ clientId, onBack }) {
 function PolicyList({ policies, full }) {
   return (
     <table className="table">
-      <thead><tr><th>Ramo</th><th>Aseguradora</th>{full && <th>N° póliza</th>}<th>Vencimiento</th><th>Estado</th><th className="t-right">Prima anual</th></tr></thead>
+      <thead><tr><th>Ramo</th><th>Aseguradora</th>{full && <th>N° póliza</th>}<th>Vencimiento</th><th>Cobro</th><th>Estado</th><th className="t-right">Prima anual</th></tr></thead>
       <tbody>
         {policies.map((p, i) => {
           const d = window.daysTo(p.venc);
@@ -234,6 +271,7 @@ function PolicyList({ policies, full }) {
               <td>{p.aseg}</td>
               {full && <td className="tnum" style={{ color: 'var(--ink-3)' }}>{p.nro}</td>}
               <td><span className="tnum">{window.fmtDate(p.venc)}</span> <span style={{ color: 'var(--ink-3)', fontSize: 12 }}>· {d}d</span></td>
+              <td><window.CobroChip debito={p.debito} /></td>
               <td><span className={`badge badge-${s.kind}`}>{s.label}</span></td>
               <td className="t-right tnum t-strong">{window.money(p.prima)}</td>
             </tr>

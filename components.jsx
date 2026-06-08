@@ -103,6 +103,19 @@ const POL_BADGE = {
   'falta-pago':{ kind: 'danger', label: 'Falta de pago' },
 };
 
+// pipeline / etapa comercial badge
+function PipelineBadge({ etapa }) {
+  const s = window.pipelineStage(etapa);
+  return <span className={`badge badge-${s.kind}`}>{s.label}</span>;
+}
+
+// método de cobro: débito automático vs cobro manual (aviso por WhatsApp)
+function CobroChip({ debito }) {
+  return debito
+    ? <span className="badge badge-emerald" title="Se cobra por débito automático"><Icon name="repeat" size={12} />Débito autom.</span>
+    : <span className="badge badge-warning" title="Sin débito: se cobra manual y se avisa por WhatsApp"><Icon name="hand-coins" size={12} />Cobro manual</span>;
+}
+
 function SectionHead({ title, sub, action }) {
   return (
     <div className="sec-head">
@@ -192,4 +205,5 @@ function Topbar({ title, sub, actions }) {
 Object.assign(window, {
   Icon, Badge, Avatar, Btn, Delta, Kpi, Meter, RamoTag,
   STATUS_BADGE, POL_BADGE, SectionHead, Sidebar, Topbar, NAV,
+  PipelineBadge, CobroChip,
 });

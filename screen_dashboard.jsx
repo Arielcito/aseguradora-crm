@@ -82,7 +82,7 @@ function DashboardScreen({ onOpenClient, onNav }) {
               </div>
               <table className="table">
                 <thead>
-                  <tr><th>Cliente</th><th>Ramo</th><th>Aseguradora</th><th>Vence</th><th className="t-right">Prima</th><th></th></tr>
+                  <tr><th>Cliente</th><th>Ramo</th><th>Vence</th><th>Cobro</th><th className="t-right">Prima</th><th></th></tr>
                 </thead>
                 <tbody>
                   {expiring.slice(0, 6).map((p, i) => {
@@ -91,13 +91,17 @@ function DashboardScreen({ onOpenClient, onNav }) {
                       <tr key={i} onClick={() => onOpenClient(p.clientId)}>
                         <td className="t-strong">{p.client}</td>
                         <td><RT_d ramo={p.ramo} /></td>
-                        <td>{p.aseg}</td>
                         <td>
                           <span className="tnum">{window.fmtDate(p.venc)}</span>{' '}
                           <span style={{ color: d <= 7 ? 'var(--danger)' : 'var(--ink-3)', fontWeight: 600, fontSize: 12 }}>· {d}d</span>
                         </td>
+                        <td><window.CobroChip debito={p.debito} /></td>
                         <td className="t-right tnum t-strong">{window.money(p.prima)}</td>
-                        <td className="t-right"><button className="btn btn-ghost btn-sm" onClick={(e) => e.stopPropagation()}>Renovar</button></td>
+                        <td className="t-right">
+                          {p.debito
+                            ? <button className="btn btn-primary btn-sm" onClick={(e) => e.stopPropagation()}><I_d name="hand-coins" />Cobrar</button>
+                            : <button className="btn btn-ghost btn-sm" onClick={(e) => e.stopPropagation()}><I_d name="message-circle" />Avisar venc.</button>}
+                        </td>
                       </tr>
                     );
                   })}
@@ -149,7 +153,7 @@ function DashboardScreen({ onOpenClient, onNav }) {
                     <span className="ic-chip" style={{ width: 28, height: 28, background: 'var(--paper-2)', color: 'var(--ink-2)' }}><I_d name={window.RAMOS[o.ramo].icon} size={15} /></span>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.client}</div>
-                      <div style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>{o.etapa}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--ink-3)' }}>{window.pipelineStage(o.etapa).label}</div>
                     </div>
                     <span className="tnum" style={{ fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-display)' }}>{window.moneyShort(o.valor)}</span>
                   </div>
