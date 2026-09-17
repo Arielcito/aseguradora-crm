@@ -23,4 +23,4 @@ HTML + CSS + React 18 (vía Babel standalone en el browser). Sitio 100% estátic
 npx serve .
 ```
 
-Abrí `index.html` a través de un servidor (no `file://`, porque Babel carga los `.jsx` por fetch).
+Abrí `demo.html` (la landing es `index.html`) a través de un servidor (no `file://`, porque Babel carga los `.jsx` por fetch).
